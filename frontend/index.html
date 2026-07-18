@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlashPulse AI - High-Velocity Flash Sale Copilot</title>
+    <!-- Google Fonts: Inter & Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome for beautiful icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Modern Header -->
+        <header class="app-header">
+            <div class="header-logo">
+                <div class="logo-icon-wrapper">
+                    <i class="fa-solid fa-bolt pulse-icon"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>FlashPulse <span class="accent">AI</span></h1>
+                    <p class="subtitle">High-Velocity Flash Sale Copilot</p>
+                </div>
+            </div>
+            
+            <!-- Surge Traffic Status Indicator -->
+            <div class="traffic-status">
+                <span class="status-dot pulsing"></span>
+                <span class="status-text">Surge Traffic: <strong class="highlight">12,480 active/min</strong></span>
+            </div>
+
+            <!-- Mode Navigation Tabs -->
+            <nav class="mode-tabs">
+                <button class="tab-btn active" data-tab="admin-tab">
+                    <i class="fa-solid fa-user-gear"></i> Admin Copilot
+                </button>
+                <button class="tab-btn" data-tab="shopper-tab">
+                    <i class="fa-solid fa-comments"></i> Shopper Chat Widget
+                </button>
+            </nav>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="app-main">
+            
+            <!-- TAB 1: ADMIN MARKETING COPY GENERATOR -->
+            <section id="admin-tab" class="tab-content active">
+                <div class="grid-container">
+                    <!-- Left: Generation Form -->
+                    <div class="card form-card">
+                        <div class="card-header">
+                            <i class="fa-solid fa-wand-magic-sparkles icon-accent"></i>
+                            <h2>Marketing Copy Generator</h2>
+                        </div>
+                        <p class="card-desc">Generate conversion-optimized, high-urgency notifications and landing copy during a traffic surge.</p>
+                        
+                        <form id="generator-form">
+                            <div class="form-group">
+                                <label for="product-name">Product Name <span class="required">*</span></label>
+                                <div class="input-wrapper">
+                                    <i class="fa-solid fa-box-open input-icon"></i>
+                                    <input type="text" id="product-name" placeholder="e.g., Apex Pro Wireless Headphones" required>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="original-price">Original Price ($) <span class="required">*</span></label>
+                                    <div class="input-wrapper">
+                                        <i class="fa-solid fa-tag input-icon"></i>
+                                        <input type="text" id="original-price" placeholder="e.g., 299.99" required>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="flash-price">Flash Sale Price ($) <span class="required">*</span></label>
+                                    <div class="input-wrapper">
+                                        <i class="fa-solid fa-fire input-icon"></i>
+                                        <input type="text" id="flash-price" placeholder="e.g., 149.99" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Marketing Style Tone</label>
+                                <div class="style-selector">
+                                    <label class="style-option active">
+                                        <input type="radio" name="style-tone" value="FOMO/Urgent" checked>
+                                        <span class="style-box">
+                                            <i class="fa-solid fa-hourglass-half"></i>
+                                            <strong>FOMO / Urgent</strong>
+                                            <small>Push timers & checkout</small>
+                                        </span>
+                                    </label>
+                                    <label class="style-option">
+                                        <input type="radio" name="style-tone" value="Scarcity">
+                                        <span class="style-box">
+                                            <i class="fa-solid fa-layer-group"></i>
+                                            <strong>Scarcity</strong>
+                                            <small>Limited stock focus</small>
+                                        </span>
+                                    </label>
+                                    <label class="style-option">
+                                        <input type="radio" name="style-tone" value="Professional">
+                                        <span class="style-box">
+                                            <i class="fa-solid fa-briefcase"></i>
+                                            <strong>Professional</strong>
+                                            <small>Value-led high-converting</small>
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="additional-details">Additional Details <small>(Optional)</small></label>
+                                <textarea id="additional-details" rows="3" placeholder="e.g., Only 100 units available. 1 year replacement warranty. Free express shipping."></textarea>
+                            </div>
+
+                            <button type="submit" id="generate-btn" class="btn btn-primary btn-block">
+                                <i class="fa-solid fa-bolt"></i> Generate Copy Stream
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Right: Streaming Output Preview -->
+                    <div class="card output-card">
+                        <div class="card-header justify-between">
+                            <div class="header-title-group">
+                                <i class="fa-solid fa-terminal icon-accent"></i>
+                                <h2>Live Generated Copy</h2>
+                            </div>
+                            <button id="copy-text-btn" class="btn btn-secondary btn-sm" disabled>
+                                <i class="fa-regular fa-copy"></i> Copy Copy
+                            </button>
+                        </div>
+                        
+                        <div class="output-preview-container">
+                            <div class="placeholder-view" id="output-placeholder">
+                                <div class="placeholder-icon-circle">
+                                    <i class="fa-solid fa-wave-square"></i>
+                                </div>
+                                <h3>Awaiting Input</h3>
+                                <p>Fill in the product details and click "Generate Copy Stream" to watch FlashPulse AI craft conversion assets in real time.</p>
+                            </div>
+                            <div id="output-text" class="markdown-output hidden"></div>
+                            
+                            <!-- Streaming Loader -->
+                            <div id="copy-stream-loader" class="stream-loader hidden">
+                                <span class="spinner-dot"></span>
+                                <span class="spinner-dot"></span>
+                                <span class="spinner-dot"></span>
+                                <span class="loader-text">Streaming responses from FlashPulse AI...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: SHOPPER LIVE SUPPORT CHAT WIDGET -->
+            <section id="shopper-tab" class="tab-content">
+                <!-- Flashing High-Urgency Store Banner -->
+                <div class="urgency-banner">
+                    <div class="banner-inner">
+                        <span class="banner-badge">LOCKED IN</span>
+                        <p class="banner-text">⚡ LIGHTNING SALE ACTIVE! FREE EXPRESS SHIPPING INCLUDED FOR THE NEXT <strong id="countdown">09:59</strong>!</p>
+                    </div>
+                </div>
+
+                <div class="shopper-container">
+                    <!-- Left: Simulated Checkout / Product Page (Provides Immersion) -->
+                    <div class="card product-preview-card">
+                        <div class="product-badge">Top Selling in Surge</div>
+                        
+                        <!-- NEW: Product Selector -->
+                        <div class="product-selector-wrapper" style="margin-bottom: 15px;">
+                            <label for="product-selector">Switch Featured Product:</label>
+                            <select id="product-selector" class="form-control">
+                                <option value="Sony WH-1000XM5|349.99|399.99|https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&q=80">Sony WH-1000XM5 Headphones</option>
+                                <option value="Samsung Galaxy S24 Ultra|1199.99|1299.99|https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=500&q=80">Samsung Galaxy S24 Ultra</option>
+                                <option value="Logitech MX Master 3S|99.99|119.99|https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=500&q=80">Logitech MX Master 3S Mouse</option>
+                            </select>
+                        </div>
+
+                        <div class="product-gallery">
+                            <div class="main-image">
+                                <img id="product-image" src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&q=80" alt="Product Image" style="max-width: 100%; border-radius: 8px;">
+                            </div>
+                        </div>
+                        
+                        <div class="product-info">
+                            <h3 id="display-product-name">Sony WH-1000XM5 Headphones</h3>
+                            <div class="product-pricing">
+                                <span class="current-price" id="display-flash-price">$349.99</span>
+                                <span class="original-price-slashed" id="display-orig-price">$399.99</span>
+                                <span class="discount-pill">Sale</span>
+                            </div>
+                            <div class="stock-urgency">
+                                <i class="fa-solid fa-triangle-exclamation"></i> Only <span class="highlight-orange">17 units left</span> in stock. 48 shoppers currently have this in their cart.
+                            </div>
+                            <div class="cart-action-buttons">
+                                <button class="btn btn-primary buy-now-btn"><i class="fa-solid fa-basket-shopping"></i> Complete Checkout</button>
+                            </div>
+                            
+                            <!-- Static FAQs to assist quick sales -->
+                            <div class="fast-faq-section">
+                                <h4>⚡ Quick Checkout FAQs</h4>
+                                <ul class="faq-list">
+                                    <li><i class="fa-regular fa-circle-check"></i> <strong>Is shipping free?</strong> Yes! Automatically applied.</li>
+                                    <li><i class="fa-regular fa-circle-check"></i> <strong>Are items in cart reserved?</strong> No, items are sold first-come, first-served.</li>
+                                    <li><i class="fa-regular fa-circle-check"></i> <strong>How do I returns?</strong> 30-day hassle-free return policy.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: High-Velocity Support Chat Interface -->
+                    <div class="card chat-card">
+                        <div class="chat-header">
+                            <div class="bot-profile">
+                                <div class="bot-avatar">
+                                    <i class="fa-solid fa-robot"></i>
+                                    <span class="active-badge"></span>
+                                </div>
+                                <div class="bot-name-details">
+                                    <h3>PulseAI Assistant</h3>
+                                    <p>Surge Support Bot • <span class="instant">Instant Replies</span></p>
+                                </div>
+                            </div>
+                            <div class="chat-actions">
+                                <button id="clear-chat-btn" title="Clear chat history">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Chat Messages Container -->
+                        <div id="chat-messages-box" class="chat-messages">
+                            <!-- Bot Welcome Message -->
+                            <div class="message bot">
+                                <div class="msg-avatar">
+                                    <i class="fa-solid fa-robot"></i>
+                                </div>
+                                <div class="msg-bubble">
+                                    Hello there! I'm PulseAI, your instant flash sale concierge. High-velocity shoppers are snapping up items rapidly! Do you have any questions before completing your checkout? ⚡
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick-Reply Prompt Suggestions -->
+                        <div class="quick-prompts-container">
+                            <button class="quick-prompt-btn" data-prompt="Is shipping completely free during the lightning window?">
+                                <i class="fa-solid fa-truck"></i> Free Shipping?
+                            </button>
+                            <button class="quick-prompt-btn" data-prompt="Will items in my cart be reserved while I check out?">
+                                <i class="fa-solid fa-cart-shopping"></i> Cart Reservation?
+                            </button>
+                            <button class="quick-prompt-btn" data-prompt="What is your return policy if the product doesn't fit?">
+                                <i class="fa-solid fa-rotate-left"></i> Return Policy?
+                            </button>
+                        </div>
+
+                        <!-- Message Input Panel -->
+                        <form id="chat-input-form" class="chat-input-area">
+                            <input type="text" id="chat-input" placeholder="Type your urgent question..." required autocomplete="off">
+                            <button type="submit" id="chat-send-btn" class="btn btn-primary btn-round">
+                                <i class="fa-solid fa-paper-plane"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Modern Footer -->
+        <footer class="app-footer">
+            <p>© 2026 FlashPulse AI. Crafted for the IBM Internship Vibe Coding Deliverables. Multi-Model Live Streaming Engine.</p>
+        </footer>
+    </div>
+
+    <!-- Application Script -->
+    <script src="app.js"></script>
+</body>
+</html>
