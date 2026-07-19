@@ -6,17 +6,13 @@ on:
   workflow_dispatch:
 
 env:
-  AWS_REGION: eu-north-1
+  AWS_REGION: ap-south-1
   ECR_REPOSITORY: flashpulse-ai
   APP_RUNNER_SERVICE_ARN: ""  # Set this in GitHub Secrets
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -24,7 +20,8 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Login to Amazon ECR
@@ -53,7 +50,7 @@ jobs:
             LLM_PROVIDER=gemini
             GEMINI_MODEL=gemini-1.5-flash
             HOST=0.0.0.0
-            CORS_ORIGINS=https://your-app.awsapprunner.com
+            CORS_ORIGINS=*
           secrets: |
             GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
           health-check-path: /health
