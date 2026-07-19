@@ -8,7 +8,6 @@ on:
 env:
   AWS_REGION: eu-north-1
   ECR_REPOSITORY: flashpulse-ai
-  APP_RUNNER_SERVICE_ARN: ""  # Set this in GitHub Secrets
 
 jobs:
   deploy:
@@ -17,44 +16,32 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Build Docker image
+        run: docker build -t $ECR_REPOSITORY:${{ github.sha }} .
+
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Build, tag, and push Docker image to ECR
-        id: build-image
         env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: ${{ github.sha }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
-          docker push --all-tags $ECR_REGISTRY/$ECR_REPOSITORY
-          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+          aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID"
+          aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY"
+          aws configure set region "${{ env.AWS_REGION }}"
+          aws sts get-caller-identity
+
+      - name: Push to ECR
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin 080705554722.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
+          docker tag $ECR_REPOSITORY:${{ github.sha }} 080705554722.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/$ECR_REPOSITORY:${{ github.sha }}
+          docker tag $ECR_REPOSITORY:${{ github.sha }} 080705554722.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/$ECR_REPOSITORY:latest
+          docker push --all-tags 080705554722.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/$ECR_REPOSITORY
 
       - name: Deploy to App Runner
-        id: deploy-apprunner
-        uses: awslabs/amazon-app-runner-deploy@main
-        with:
-          service-arn: ${{ secrets.APP_RUNNER_SERVICE_ARN }}
-          image: ${{ steps.build-image.outputs.image }}
-          port: 8000
-          environment-variables: |
-            LLM_PROVIDER=gemini
-            GEMINI_MODEL=gemini-1.5-flash
-            HOST=0.0.0.0
-            CORS_ORIGINS=*
-          secrets: |
-            GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
-          health-check-path: /health
-          wait-for-service-stability: true
-
-      - name: App Runner URL
-        run: echo "Deployed to ${{ steps.deploy-apprunner.outputs.service-url }}"
+        run: |
+          IMAGE_URI="080705554722.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/$ECR_REPOSITORY:${{ github.sha }}"
+          echo "Image pushed: $IMAGE_URI"
+          echo "Next: Create App Runner service from this image in AWS Console"
+          echo "URL format: https://xxxx.awsapprunner.com"
