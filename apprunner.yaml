@@ -19,7 +19,7 @@ build:
         value: "0.0.0.0"
     secrets:
       - name: GEMINI_API_KEY
-        value-from: "arn:aws:secretsmanager:us-east-1:YOUR_ACCOUNT_ID:secret:flashpulse/GEMINI_API_KEY"
+        value-from: "arn:aws:secretsmanager:REGION:ACCOUNT_ID:secret:flashpulse/GEMINI_API_KEY"
 healthcheck:
   path: /health
   interval: 30
