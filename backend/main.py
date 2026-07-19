@@ -100,7 +100,7 @@ def get_llm_client():
         from google import genai
         client = genai.Client(api_key=api_key)
 
-        model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+        model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
         return "gemini", client, model_name
         
     else:

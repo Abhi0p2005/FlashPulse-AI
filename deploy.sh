@@ -14,7 +14,7 @@ fi
 
 docker run -d -p 8000:8000 --restart unless-stopped \
   -e LLM_PROVIDER=gemini \
-  -e GEMINI_MODEL=gemini-2.5-flash \
+  -e GEMINI_MODEL=gemini-2.5-flash-lite \
   -e GEMINI_API_KEY="$GEMINI_API_KEY" \
   flashpulse-ai
 
