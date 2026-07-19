@@ -1,0 +1,28 @@
+version: 1.0
+runtime: python311
+build:
+  build.commands:
+    pre:
+      - python --version
+    build:
+      - pip install --no-cache-dir -r backend/requirements.txt
+  run:
+    command: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    network:
+      port: $PORT
+    env:
+      - name: LLM_PROVIDER
+        value: "gemini"
+      - name: GEMINI_MODEL
+        value: "gemini-1.5-flash"
+      - name: HOST
+        value: "0.0.0.0"
+    secrets:
+      - name: GEMINI_API_KEY
+        value-from: "arn:aws:secretsmanager:us-east-1:YOUR_ACCOUNT_ID:secret:flashpulse/GEMINI_API_KEY"
+healthcheck:
+  path: /health
+  interval: 30
+  timeout: 5
+  unhealthy_threshold: 3
+  healthy_threshold: 2

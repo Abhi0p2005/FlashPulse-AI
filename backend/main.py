@@ -4,7 +4,7 @@ import logging
 import asyncio
 from typing import List, Optional
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -19,10 +19,25 @@ load_dotenv()
 
 app = FastAPI(title="FlashPulse AI - Flash Sale Copilot", version="1.0.0")
 
-# CORS setup for local development
+@app.on_event("startup")
+async def startup():
+    provider = os.getenv("LLM_PROVIDER", "").lower()
+    if provider == "gemini":
+        try:
+            import google.generativeai as genai
+            genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+            for m in genai.list_models():
+                if 'generateContent' in m.supported_generation_methods:
+                    logger.info(f"Available Gemini model: {m.name}")
+        except Exception as e:
+            logger.warning(f"Could not list Gemini models on startup: {e}")
+
+# CORS — allow specific origins in production, all in development
+cors_origins_env = os.getenv("CORS_ORIGINS", "*")
+cors_origins = [o.strip() for o in cors_origins_env.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -43,6 +58,15 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     messages: List[ChatMessage]
     product_context: Optional[str] = None
+
+# Health check endpoint (required by AWS App Runner)
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "service": "FlashPulse AI"}
+
+@app.get("/api/health")
+async def api_health_check():
+    return {"status": "healthy", "service": "FlashPulse AI"}
 
 # Semaphore to limit concurrency (Rate Limiting)
 # Limiting to 5 concurrent requests to throttle RPM
@@ -74,19 +98,8 @@ def get_llm_client():
             return "gemini", None, "Gemini API Key is missing."
         import google.generativeai as genai
         genai.configure(api_key=api_key)
-        
-        # Use a model name that the API will definitely accept, 
-        # often just "gemini-1.5-flash" works without "models/"
-        model_name = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
-        
-        # Try listing to see what is available
-        try:
-            for m in genai.list_models():
-                if 'generateContent' in m.supported_generation_methods:
-                    logger.info(f"Available model: {m.name}")
-        except Exception as e:
-            logger.error(f"Error listing models: {e}")
 
+        model_name = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
         model = genai.GenerativeModel(model_name)
         return "gemini", model, model_name
         
@@ -178,13 +191,24 @@ async def chat_stream(request: ChatRequest):
         return StreamingResponse(err_generator(), media_type="text/event-stream")
 
     system_prompt = (
-        "You are 'PulseAI', an instant support assistant for our online store's high-velocity flash sale. "
+        "You are 'PulseAI', an intelligent instant support assistant for our online store's high-velocity flash sale. "
         "The store is experiencing extremely high traffic right now. Customers are anxious, excited, and have quick, direct questions. "
         "Be extremely helpful, polite, and reassuring but also quick and punchy in your responses. "
-        "Keep answers concise (maximum 3-4 sentences) so they can read and complete their checkout instantly. "
-        "Policy: Shipping is absolutely FREE during this 10-minute lightning sale window. "
-        "Returns are allowed within 30 days. Stock is highly limited and items in cart are not reserved. "
-        "Encourage them to check out immediately!"
+        "Keep answers concise (maximum 3-4 sentences) so they can read and complete their checkout instantly.\n\n"
+        "YOUR CAPABILITIES:\n"
+        "1. ORDER TRACKING: Ask for their order ID/number and provide simulated tracking info (order received, processing, shipped, out for delivery, delivered). Give typical shipping timelines (express 1-2 days, standard 3-5 days).\n"
+        "2. PRODUCT RECOMMENDATIONS: Based on the current active product, suggest complementary items, cross-sells, and upsells. Mention popular accessories, similar trending items, or higher-tier versions.\n"
+        "3. CART MANAGEMENT: Help users add items to cart, explain cart reservation policies (items in cart are NOT reserved during flash sales), guide through checkout steps, explain payment methods accepted (credit/debit cards, PayPal, Apple Pay, Google Pay).\n"
+        "4. MULTI-LANGUAGE SUPPORT: Detect if the user writes in a language other than English (Spanish, French, German, etc.) and respond in that same language. You are fluent in all major languages.\n"
+        "5. PROACTIVE SUGGESTIONS: After answering a question, occasionally suggest what else you can help with (order tracking, recommendations, cart help, shipping info, return policy, payment options).\n\n"
+        "POLICIES:\n"
+        "- Shipping is absolutely FREE during this 10-minute lightning sale window.\n"
+        "- Returns are allowed within 30 days of purchase.\n"
+        "- Stock is highly limited — first come, first served.\n"
+        "- Items in cart are NOT reserved during flash sales.\n"
+        "- Express shipping (1-2 business days) is available.\n"
+        "- Payment methods: All major credit/debit cards, PayPal, Apple Pay, Google Pay.\n"
+        "- Encourage them to check out immediately!"
     )
     
     if request.product_context:
@@ -248,13 +272,14 @@ async def chat_stream(request: ChatRequest):
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
-# Mount Frontend files at root
+# Serve Frontend files with no-cache headers
 current_dir = os.path.dirname(os.path.abspath(__file__))
+repo_root = os.path.abspath(os.path.join(current_dir, ".."))
 possible_paths = [
-    os.path.join(current_dir, "../frontend"),
-    os.path.join(current_dir, "frontend"),
-    "C:/College/Project/FlashPulse AI/frontend",
-    "frontend"
+    os.path.join(current_dir, "../frontend"),         # dev: backend/../frontend
+    os.path.join(current_dir, "frontend"),             # alternate layout
+    os.path.join(repo_root, "frontend"),               # repo root /frontend
+    os.path.join("/app", "frontend"),                  # Docker: /app/frontend
 ]
 
 frontend_path = None
@@ -263,9 +288,54 @@ for path in possible_paths:
         frontend_path = os.path.abspath(path)
         break
 
+FRONTEND_CACHE_HEADERS = {
+    "Cache-Control": "no-cache, no-store, must-revalidate",
+    "Pragma": "no-cache",
+    "Expires": "0",
+}
+
 if frontend_path:
     logger.info(f"Serving frontend from: {frontend_path}")
-    app.mount("/", StaticFiles(directory=frontend_path, html=True), name="frontend")
+
+    FRONTEND_DIR = frontend_path
+
+    FRONTEND_MIME = {
+        ".html": "text/html",
+        ".css": "text/css",
+        ".js": "text/javascript",
+        ".png": "image/png",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".svg": "image/svg+xml",
+        ".ico": "image/x-icon",
+        ".json": "application/json",
+        ".woff2": "font/woff2",
+    }
+
+    import mimetypes
+    mimetypes.init()
+
+    def _get_mime(path: str) -> str:
+        ext = os.path.splitext(path)[1].lower()
+        return FRONTEND_MIME.get(ext) or mimetypes.guess_type(path)[0] or "application/octet-stream"
+
+    @app.get("/{path:path}", include_in_schema=False)
+    async def serve_frontend(path: str):
+        if not path or path == "":
+            path = "index.html"
+
+        full_path = os.path.normpath(os.path.join(FRONTEND_DIR, path))
+
+        if not full_path.startswith(FRONTEND_DIR):
+            raise HTTPException(status_code=404)
+
+        if not os.path.isfile(full_path):
+            index_path = os.path.join(FRONTEND_DIR, "index.html")
+            if os.path.isfile(index_path):
+                return FileResponse(index_path, media_type="text/html", headers=FRONTEND_CACHE_HEADERS)
+            raise HTTPException(status_code=404)
+
+        return FileResponse(full_path, media_type=_get_mime(full_path), headers=FRONTEND_CACHE_HEADERS)
 else:
     logger.warning("Frontend path not found in any standard locations. Running API-only mode.")
 

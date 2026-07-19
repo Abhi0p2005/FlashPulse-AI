@@ -1,0 +1,63 @@
+name: Deploy to AWS App Runner
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: flashpulse-ai
+  APP_RUNNER_SERVICE_ARN: ""  # Set this in GitHub Secrets
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push Docker image to ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          docker push --all-tags $ECR_REGISTRY/$ECR_REPOSITORY
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Deploy to App Runner
+        id: deploy-apprunner
+        uses: awslabs/amazon-app-runner-deploy@main
+        with:
+          service-arn: ${{ secrets.APP_RUNNER_SERVICE_ARN }}
+          image: ${{ steps.build-image.outputs.image }}
+          port: 8000
+          environment-variables: |
+            LLM_PROVIDER=gemini
+            GEMINI_MODEL=gemini-1.5-flash
+            HOST=0.0.0.0
+            CORS_ORIGINS=https://your-app.awsapprunner.com
+          secrets: |
+            GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+          health-check-path: /health
+          wait-for-service-stability: true
+
+      - name: App Runner URL
+        run: echo "Deployed to ${{ steps.deploy-apprunner.outputs.service-url }}"
