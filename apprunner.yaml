@@ -14,12 +14,12 @@ build:
       - name: LLM_PROVIDER
         value: "gemini"
       - name: GEMINI_MODEL
-        value: "gemini-1.5-flash"
+        value: "gemini-2.5-flash"
       - name: HOST
         value: "0.0.0.0"
     secrets:
       - name: GEMINI_API_KEY
-        value-from: "arn:aws:secretsmanager:REGION:ACCOUNT_ID:secret:flashpulse/GEMINI_API_KEY"
+        value-from: "arn:aws:secretsmanager:ap-south-1:ACCOUNT_ID:secret:flashpulse/GEMINI_API_KEY"
 healthcheck:
   path: /health
   interval: 30

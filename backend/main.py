@@ -8,6 +8,7 @@ from fastapi.responses import StreamingResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from google.genai import types
 from dotenv import load_dotenv
 
 # Set up logging
@@ -24,11 +25,11 @@ async def startup():
     provider = os.getenv("LLM_PROVIDER", "").lower()
     if provider == "gemini":
         try:
-            import google.generativeai as genai
-            genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-            for m in genai.list_models():
-                if 'generateContent' in m.supported_generation_methods:
-                    logger.info(f"Available Gemini model: {m.name}")
+            from google import genai
+            client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+            for m in client.models.list():
+                logger.info(f"Available Gemini model: {m.name}")
+            client.close()
         except Exception as e:
             logger.warning(f"Could not list Gemini models on startup: {e}")
 
@@ -96,12 +97,11 @@ def get_llm_client():
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key or api_key.strip() == "" or api_key == "your_gemini_api_key_here":
             return "gemini", None, "Gemini API Key is missing."
-        import google.generativeai as genai
-        genai.configure(api_key=api_key)
+        from google import genai
+        client = genai.Client(api_key=api_key)
 
-        model_name = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
-        model = genai.GenerativeModel(model_name)
-        return "gemini", model, model_name
+        model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+        return "gemini", client, model_name
         
     else:
         return "unknown", None, f"Unsupported LLM_PROVIDER '{provider}'."
@@ -168,10 +168,10 @@ async def generate_copy(request: CopyRequest):
                         async for text in stream.text_stream:
                             yield f"data: {text}\n\n"
                 elif provider == "gemini":
-                    # For Gemini, we combine system prompt and user prompt
-                    full_prompt = f"{system_prompt}\n\n{user_prompt}"
-                    response = await client.generate_content_async(full_prompt, stream=True)
-                    async for chunk in response:
+                    async for chunk in await client.aio.models.generate_content_stream(
+                        model=model_or_err,
+                        contents=f"{system_prompt}\n\n{user_prompt}",
+                    ):
                         if chunk.text:
                             yield f"data: {chunk.text}\n\n"
             except Exception as e:
@@ -248,21 +248,20 @@ async def chat_stream(request: ChatRequest):
                         async for text in stream.text_stream:
                             yield f"data: {text}\n\n"
                 elif provider == "gemini":
-                    # Convert history for Gemini
-                    chat = client.start_chat(history=[])
-                    # Note: Gemini usually expects alternating roles or specifically formatted history
-                    # This is a simplified approach for chat
-                    full_history = []
-                    # Add system prompt as part of the first message or instruction
-                    full_history.append({"role": "user", "parts": [system_prompt]})
-                    for msg in request.messages:
-                        role = "user" if msg.role == "user" else "model"
-                        full_history.append({"role": role, "parts": [msg.content]})
-                    
-                    chat.history = full_history
-                    last_msg = request.messages[-1].content
-                    response = await chat.send_message_async(last_msg, stream=True)
-                    async for chunk in response:
+                    contents = [
+                        types.Content(
+                            role="user" if msg.role == "user" else "model",
+                            parts=[types.Part.from_text(text=msg.content)]
+                        ) for msg in request.messages
+                    ]
+
+                    async for chunk in await client.aio.models.generate_content_stream(
+                        model=model_or_err,
+                        contents=contents,
+                        config=types.GenerateContentConfig(
+                            system_instruction=system_prompt,
+                        ),
+                    ):
                         if chunk.text:
                             yield f"data: {chunk.text}\n\n"
             except Exception as e:
